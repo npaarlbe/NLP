@@ -2,14 +2,21 @@ package main
 
 import (
 	"fmt"
+	"github.com/cdipaolo/sentiment"
 	"github.com/kljensen/snowball"
 	"strings"
 	"unicode"
 )
 
 func main() {
+	// Initialize the sentiment model
+	model, err := sentiment.Restore()
+	if err != nil {
+		panic(fmt.Sprintf("Could not restore sentiment model: %v", err))
+	}
+
 	// Sample text for processing
-	text := "The text is very ugly and powerful. NLP in Go is amazing!"
+	text := "The text is very pretty and awful. NLP in Go is amazing and perfect!"
 
 	// Tokenization
 	tokens := tokenize(text)
@@ -37,6 +44,14 @@ func main() {
 	fmt.Println("\nSentences:")
 	for _, sentence := range sentences {
 		fmt.Printf("- %s\n", sentence)
+	}
+
+	// Sentiment Analysis
+	for _, sentence := range sentences {
+		sentiment, confidence := analyzeSentiment(sentence, model)
+		fmt.Printf("\nSentiment Analysis for: %s\n", sentence)
+		fmt.Printf("Sentiment: %s\n", sentiment)
+		fmt.Printf("Confidence: %.2f\n", confidence)
 	}
 
 	// Basic Named Entity Recognition
@@ -73,7 +88,6 @@ func removeStopwords(tokens []string) []string {
 		"by": true, "for": true, "from": true, "has": true, "he": true, "in": true,
 		"is": true, "it": true, "its": true, "of": true, "on": true, "that": true,
 		"the": true, "to": true, "was": true, "were": true, "will": true, "with": true,
-		"very": true,
 	}
 
 	filtered := make([]string, 0)
@@ -121,6 +135,7 @@ func wordFrequency(tokens []string) map[string]int {
 	}
 	return freq
 }
+
 func buildWordAssociations(tokens []string) map[string][]string {
 	associations := make(map[string][]string)
 	for i, token := range tokens {
@@ -133,4 +148,13 @@ func buildWordAssociations(tokens []string) map[string][]string {
 		}
 	}
 	return associations
+}
+func analyzeSentiment(sentence string, model sentiment.Models) (string, float64) {
+	analysis := model.SentimentAnalysis(sentence, sentiment.English)
+
+	if analysis.Score == 1 {
+		return "Positive", 1.0
+	} else {
+		return "Negative", 0.0
+	}
 }
